@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Johann Sebastian Bach – Chatbot</title>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1209;
+    --parchment: #f5ead6;
+    --parchment-dark: #e8d6b0;
+    --parchment-mid: #efe0c0;
+    --gold: #9a7b2f;
+    --gold-light: #c9a84c;
+    --sepia: #6b4c1e;
+    --sepia-light: #9c7242;
+    --shadow: rgba(26,18,9,0.35);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1209;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Crimson Pro', Georgia, serif;
+    padding: 20px;
+    background-image:
+      radial-gradient(ellipse at 20% 50%, rgba(154,123,47,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(154,123,47,0.06) 0%, transparent 50%);
+  }
+  .manuscript-frame {
+    width: 100%;
+    max-width: 780px;
+    background: var(--parchment);
+    border-radius: 2px;
+    box-shadow:
+      0 0 0 1px var(--gold),
+      0 0 0 4px rgba(154,123,47,0.3),
+      0 8px 60px rgba(0,0,0,0.7),
+      inset 0 0 80px rgba(107,76,30,0.12);
+    position: relative;
+    overflow: hidden;
+  }
+  .staff-decoration {
+    width: 100%;
+    height: 36px;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px, transparent 5px,
+      var(--sepia-light) 5px, var(--sepia-light) 6px,
+      transparent 6px, transparent 11px
+    );
+    opacity: 0.2;
+    position: absolute;
+    top: 72px;
+    left: 0;
+  }
+  header {
+    padding: 32px 40px 22px;
+    border-bottom: 1px solid var(--gold);
+    position: relative;
+    text-align: center;
+    background: linear-gradient(to bottom, var(--parchment-dark), var(--parchment));
+  }
+  .monogram {
+    font-family: 'IM Fell English SC', serif;
+    font-size: 12px;
+    letter-spacing: 6px;
+    color: var(--gold);
+    margin-bottom: 6px;
+    opacity: 0.85;
+  }
+  .title-main {
+    font-family: 'IM Fell English', serif;
+    font-size: 30px;
+    color: var(--ink);
+    line-height: 1.1;
+  }
+  .title-sub {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--sepia);
+    margin-top: 5px;
+    letter-spacing: 0.5px;
+  }
+  .clef {
+    position: absolute;
+    top: 50%; transform: translateY(-50%);
+    font-size: 50px;
+    color: var(--gold);
+    opacity: 0.3;
+    line-height: 1;
+  }
+  .clef-l { left: 32px; }
+  .clef-r { right: 32px; }
+  .chat-container {
+    padding: 24px 40px;
+    min-height: 380px;
+    max-height: 58vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    background: linear-gradient(to bottom, var(--parchment) 0%, var(--parchment-mid) 100%);
+    scrollbar-width: thin;
+    scrollbar-color: var(--sepia-light) transparent;
+  }
+  .chat-container::-webkit-scrollbar { width: 5px; }
+  .chat-container::-webkit-scrollbar-thumb { background: var(--sepia-light); border-radius: 3px; }
+  .message { display: flex; flex-direction: column; gap: 5px; animation: fadeUp 0.4s ease; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .message.user { align-items: flex-end; }
+  .message.bach  { align-items: flex-start; }
+  .msg-label {
+    font-family: 'IM Fell English SC', serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--sepia-light);
+    text-transform: uppercase;
+  }
+  .bubble {
+    max-width: 80%;
+    padding: 13px 17px;
+    border-radius: 2px;
+    font-size: 16px;
+    line-height: 1.65;
+    color: var(--ink);
+  }
+  .message.user .bubble {
+    background: var(--parchment-dark);
+    border: 1px solid var(--sepia-light);
+    border-right: 3px solid var(--sepia);
+  }
+  .message.bach .bubble {
+    background: linear-gradient(135deg, #fffaf0, var(--parchment));
+    border: 1px solid var(--gold);
+    border-left: 3px solid var(--gold);
+    box-shadow: 2px 2px 10px rgba(154,123,47,0.1);
+  }
+  .welcome {
+    text-align: center;
+    padding: 20px 10px;
+  }
+  .welcome-quote {
+    font-family: 'IM Fell English', serif;
+    font-style: italic;
+    font-size: 16.5px;
+    line-height: 1.7;
+    color: var(--sepia);
+    border-top: 1px solid var(--gold);
+    border-bottom: 1px solid var(--gold);
+    padding: 12px 0;
+    margin-bottom: 8px;
+  }
+  .welcome-sub {
+    font-size: 13.5px;
+    color: var(--sepia-light);
+    font-style: italic;
+  }
+  .suggestions {
+    padding: 0 40px 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    border-bottom: 1px solid rgba(154,123,47,0.2);
+  }
+  .sug-label {
+    width: 100%;
+    font-family: 'IM Fell English SC', serif;
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--sepia-light);
+    margin-bottom: 2px;
+  }
+  .chip {
+    background: transparent;
+    border: 1px solid var(--sepia-light);
+    color: var(--sepia);
+    font-family: 'Crimson Pro', serif;
+    font-size: 13.5px;
+    padding: 5px 12px;
+    border-radius: 1px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-style: italic;
+  }
+  .chip:hover {
+    background: var(--parchment-dark);
+    border-color: var(--gold);
+    color: var(--ink);
+  }
+  .input-area {
+    padding: 18px 40px 26px;
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+    background: linear-gradient(to bottom, var(--parchment-mid), var(--parchment-dark));
+    border-top: 1px solid rgba(154,123,47,0.25);
+  }
+  .input-wrapper { flex: 1; }
+  textarea {
+    width: 100%;
+    background: rgba(255,252,240,0.85);
+    border: 1px solid var(--sepia-light);
+    border-bottom: 2px solid var(--sepia);
+    color: var(--ink);
+    font-family: 'Crimson Pro', serif;
+    font-size: 16px;
+    padding: 11px 15px;
+    resize: none;
+    outline: none;
+    border-radius: 1px;
+    min-height: 50px;
+    max-height: 120px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    line-height: 1.5;
+  }
+  textarea::placeholder { color: var(--sepia-light); font-style: italic; opacity: 0.7; }
+  textarea:focus { border-color: var(--gold); box-shadow: 0 2px 10px rgba(154,123,47,0.15); }
+  .send-btn {
+    background: var(--sepia);
+    color: var(--parchment);
+    border: none;
+    padding: 13px 20px;
+    font-family: 'IM Fell English SC', serif;
+    font-size: 12px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border-radius: 1px;
+    transition: all 0.2s;
+    height: 50px;
+    white-space: nowrap;
+  }
+  .send-btn:hover:not(:disabled) { background: var(--gold); color: var(--ink); }
+  .send-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .typing-indicator { display: flex; gap: 5px; align-items: center; padding: 12px 17px; }
+  .dot { width: 7px; height: 7px; background: var(--gold); border-radius: 50%; animation: bounce 1.2s infinite; }
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes bounce {
+    0%,80%,100% { transform: translateY(0); opacity: 0.5; }
+    40%          { transform: translateY(-6px); opacity: 1; }
+  }
+  footer {
+    text-align: center;
+    padding: 9px;
+    font-size: 11px;
+    font-style: italic;
+    color: var(--sepia-light);
+    opacity: 0.55;
+    border-top: 1px solid rgba(154,123,47,0.15);
+    background: var(--parchment-dark);
+  }
+  @media (max-width: 560px) {
+    .chat-container, .input-area, .suggestions { padding-left: 16px; padding-right: 16px; }
+    header { padding: 22px 16px 16px; }
+    .clef { display: none; }
+    .title-main { font-size: 22px; }
+    .bubble { max-width: 92%; font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="manuscript-frame">
+  <div class="staff-decoration"></div>
+  <header>
+    <div class="clef clef-l">𝄞</div>
+    <div class="monogram">J &middot; S &middot; B &middot; A &middot; C &middot; H</div>
+    <div class="title-main">Johann Sebastian Bach</div>
+    <div class="title-sub">Kantor zu Leipzig &amp; Hofcompositeur &nbsp;·&nbsp; 1685 – 1750</div>
+    <div class="clef clef-r">𝄞</div>
+  </header>
+
+  <div class="chat-container" id="chatContainer">
+    <div class="welcome">
+      <div class="welcome-quote">
+        „Die Musik ist die Sprache Gottes – wer sie versteht, versteht die Schöpfung selbst.<br>
+        Soli Deo Gloria – alles, was ich schreibe, schreibe ich allein zu Gottes Ehre."
+      </div>
+      <div class="welcome-sub">Stellt mir Eure Fragen zu meinem Leben und meiner Musik.</div>
+    </div>
+  </div>
+
+  <div class="suggestions" id="suggestions">
+    <span class="sug-label">Vorschläge</span>
+    <button class="chip" onclick="useSuggestion(this)">Wo wurdest du geboren?</button>
+    <button class="chip" onclick="useSuggestion(this)">Was ist das Wohltemperierte Klavier?</button>
+    <button class="chip" onclick="useSuggestion(this)">Was bedeutet „SDG" in deinen Noten?</button>
+    <button class="chip" onclick="useSuggestion(this)">Was sind Kantaten?</button>
+    <button class="chip" onclick="useSuggestion(this)">Erkläre mir eine Fuge.</button>
+    <button class="chip" onclick="useSuggestion(this)">Wie war deine Familie?</button>
+    <button class="chip" onclick="useSuggestion(this)">Was sind die Brandenburgischen Konzerte?</button>
+    <button class="chip" onclick="useSuggestion(this)">Warum bist du nach Lübeck gereist?</button>
+  </div>
+
+  <div class="input-area">
+    <div class="input-wrapper">
+      <textarea id="userInput" placeholder="Stellt mir Eure Frage …" rows="1"
+        onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    </div>
+    <button class="send-btn" id="sendBtn" onclick="sendMessage()">Senden</button>
+  </div>
+
+  <footer>Für den Musikunterricht Kl. 10 · Gymnasium · Antworten basieren auf historisch belegten Quellen</footer>
+</div>
+
+<script>
+const SYSTEM = `Du bist Johann Sebastian Bach (1685–1750). Du sprichst in der Ich-Form, auf Deutsch, in einem würdevollen, gebildeten, aber für 15–16-jährige Gymnasiasten gut verständlichen Ton – wie ein weiser Meister, der sein Wissen gerne teilt. Deine Sprache darf leicht altertümlich klingen, bleibt aber immer verständlich.
+
+OBERSTES GEBOT: Alle Aussagen müssen historisch korrekt und belegbar sein. Erfinde niemals Fakten. Wenn du etwas nicht weißt oder eine Frage dein Leben (vor 1750) übersteigt, weise klar darauf hin.
+
+=== DEIN LEBEN ===
+- Geboren: 21. März 1685 in Eisenach (Thüringen)
+- Gestorben: 28. Juli 1750 in Leipzig
+- Vater: Johann Ambrosius Bach, Stadtmusiker in Eisenach. Eltern starben 1694 (Mutter) und 1695 (Vater). Aufgezogen vom älteren Bruder Johann Christoph Bach in Ohrdruf, der dir Orgelunterricht gab.
+- 1700–1703: Schüler an der Michaelisschule Lüneburg; Chorsänger, Zugang zur großen Bibliothek, Einfluss norddeutscher Orgelmusik
+- Stellen: Organist Arnstadt (1703–1707) – hier auch Konflikt wegen zu langer Abwesenheit (Reise zu Buxtehude in Lübeck, Herbst 1705/Anfang 1706); Organist Mühlhausen (1707–1708); Hoforganist und später Konzertmeister am Hof Weimar (1708–1717) – Inhaftierung 1717 wegen eigenmächtiger Entlassung; Hofkapellmeister Köthen (1717–1723) – weltliche Instrumentalmusik für Fürst Leopold; Thomaskantor Leipzig (1723–1750) – Leitung der Thomasschule und Kirchenmusik der vier Hauptkirchen
+- Erste Ehe: Maria Barbara Bach (Cousine, geheiratet 1707, gest. 1720 überraschend), 7 Kinder, davon 4 überlebten
+- Zweite Ehe: Anna Magdalena Wilcke (Hofsängerin, geheiratet 1721), 13 weitere Kinder, viele starben früh
+- Bekannte Söhne: Wilhelm Friedemann (Halle, Dresden), Carl Philipp Emanuel (Berlin, Hamburg), Johann Christoph Friedrich (Bückeburg), Johann Christian (London)
+- Augenoperationen 1750 durch John Taylor (Wunderdoktor); danach rasch gesundheitlich verschlechtert; Tod am 28. Juli 1750 (wahrscheinlich Schlaganfall)
+- Lange nach deinem Tod vergessen; Wiederentdeckung durch Felix Mendelssohn Bartholdy 1829 (Matthäus-Passion)
+
+=== DEIN WERK ===
+- Ca. 1100 überlieferte Werke im BWV (Bach-Werke-Verzeichnis)
+- Kirchenkantaten: ca. 200 erhalten (ursprünglich ca. 300). Kantaten sind mehrsätzige Vokalwerke für Chor, Solisten und Orchester zu Bibeltexten/Chorälen. Wichtige Beispiele: BWV 140 „Wachet auf, ruft uns die Stimme", BWV 82 „Ich habe genug", BWV 147 „Herz und Mund und Tat und Leben" (Choral: „Jesus bleibet meine Freude")
+- Weihnachtsoratorium BWV 248 (1734): 6 Kantaten für die Weihnachtszeit
+- Matthäus-Passion BWV 244 (1727/1729): doppelchöriges Werk für zwei Chöre, zwei Orchester, Solisten. Text: Matthäus 26–27 + Dichtungen Picanders
+- Johannes-Passion BWV 245 (1724, mehrfach überarbeitet)
+- Messe h-Moll BWV 232: größtes Vokalwerk, verschiedene Teile über Jahrzehnte entstanden, kurz vor dem Tod vollendet
+- Wohltemperiertes Klavier (WTK): Band I (1722, Köthen), Band II (ca. 1742, Leipzig). Je 24 Präludien und Fugen durch alle Dur- und Molltonarten. Demonstriert die Spielbarkeit aller Tonarten durch gleichschwebende Temperatur
+- Brandenburgische Konzerte BWV 1046–1051 (6 Konzerte, gewidmet Markgraf Christian Ludwig von Brandenburg-Schwedt, 1721, entstanden in Köthen): unterschiedliche Besetzungen, concerto-grosso-Prinzip
+- Goldberg-Variationen BWV 988 (1741): 30 Variationen über eine Aria, für Cembalo mit zwei Manualen
+- Inventionen und Sinfonien BWV 772–801: zwei- und dreistimmige Stücke als Unterrichtswerk (für seinen Sohn Wilhelm Friedemann)
+- Cellosuiten BWV 1007–1012: 6 Suiten für Violoncello solo (Allemande, Courante, Sarabande, Menuett/Bourrée/Gavotte, Gigue)
+- Sonaten und Partiten für Solovioline BWV 1001–1006
+- Orgelwerke: Toccata und Fuge d-Moll BWV 565, Passacaglia und Fuge c-Moll BWV 582, Orgelbüchlein BWV 599–644 (Choralvorspiele)
+- Musikalisches Opfer BWV 1079 (1747): nach Besuch am Hof Friedrichs des Großen in Potsdam; Thema vom König vorgegeben
+- Die Kunst der Fuge BWV 1080: systematische Darstellung aller Fugen- und Kanonformen; unvollendet (Abbruch mitten in der Schlussfuge)
+
+=== MUSIKTHEORIE (FÜR KL. 10 RELEVANT) ===
+- Fuge: Kontrapunktische Form. Teile: Exposition (Dux/Comes im Quintabstand), Zwischensatz/Episode, Engführung (Stretto), Augmentation/Diminution, Umkehrung, Krebs
+- Kontrapunkt: Kunst der stimmigen Mehrstimmigkeit nach strengen Regeln (Intervallregeln, Stimmführung)
+- Basso continuo (Generalbass): Bezifferter Bass, vom Cembalo/Orgel + Cello/Fagott realisiert – typisch für den Barock
+- Affektenlehre: Musikfiguren und -mittel drücken bestimmte Affekte (Gefühlszustände) aus (z.B. Chromatik = Trauer, punktierter Rhythmus = Würde)
+- Choralbearbeitung: Bearbeitung überlieferter Kirchenmelodien (Lutherchoräle) für Orgel oder Chor
+- Gleichschwebende Temperatur: Stimmungssystem, bei dem alle Halbtöne gleich groß sind – dadurch alle Tonarten spielbar (wichtig für WTK)
+- Concerto grosso: Prinzip des Wechsels zwischen großem Ensemble (Ripieno) und kleiner Solistengruppe (Concertino)
+
+=== DEINE MOTIVATION ===
+- „Soli Deo Gloria" (SDG) schriebst du unter deine Werke: Gott allein zur Ehre
+- „J.J." (Jesu Juva = Jesus hilf) am Anfang vieler Partituren
+- Tiefe lutherisch-protestantische Frömmigkeit prägt dein gesamtes Schaffen
+- Musik als Gottesdienst und Handwerk: Fleiß, Regelkenntnis, Kompositionstechnik als Voraussetzung
+
+=== KONTEXT ===
+- Zeitgenossen: Georg Philipp Telemann (Freund, Taufpate deines Sohnes CPE), Georg Friedrich Händel (nie persönlich getroffen, obwohl Zeitgenossen), Antonio Vivaldi (dessen Konzerte du für Cembalo/Orgel bearbeitest), Dietrich Buxtehude (zu Fuß/Kutsche nach Lübeck 1705 gereist, um ihn zu hören)
+- Schüler u.a.: Johann Friedrich Agricola, Johann Philipp Kirnberger
+
+ANTWORTFORMAT: 3–6 Sätze, klar, sachlich und in der Ich-Form als Bach. Bei komplexen Fragen auch länger. Werktitel kursiv im Fließtext erwähnen, wenn sinnvoll. Bleibe immer in der Rolle, sei aber pädagogisch hilfreich und klar.`;
+
+let history = [];
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+}
+
+function useSuggestion(btn) {
+  document.getElementById('userInput').value = btn.textContent;
+  document.getElementById('suggestions').style.display = 'none';
+  sendMessage();
+}
+
+async function sendMessage() {
+  const inp = document.getElementById('userInput');
+  const text = inp.value.trim();
+  if (!text) return;
+
+  const btn = document.getElementById('sendBtn');
+  btn.disabled = true;
+  inp.value = ''; inp.style.height = 'auto';
+  document.getElementById('suggestions').style.display = 'none';
+
+  addMsg('user', text);
+  history.push({ role: 'user', content: text });
+
+  const typer = addTyping();
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: SYSTEM,
+        messages: history
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'Verzeiht – meine Feder versagt mir gerade.';
+    typer.remove();
+    addMsg('bach', reply);
+    history.push({ role: 'assistant', content: reply });
+  } catch {
+    typer.remove();
+    addMsg('bach', 'Es tut mir leid – es scheint ein Fehler aufgetreten zu sein. Versucht es bitte erneut.');
+  }
+
+  btn.disabled = false;
+  inp.focus();
+}
+
+function addMsg(role, text) {
+  const c = document.getElementById('chatContainer');
+  const wrap = document.createElement('div');
+  wrap.className = `message ${role}`;
+
+  const lbl = document.createElement('div');
+  lbl.className = 'msg-label';
+  lbl.textContent = role === 'user' ? 'Ihr' : 'J. S. Bach';
+
+  const bbl = document.createElement('div');
+  bbl.className = 'bubble';
+  bbl.textContent = text;
+
+  wrap.appendChild(lbl);
+  wrap.appendChild(bbl);
+  c.appendChild(wrap);
+  c.scrollTop = c.scrollHeight;
+  return wrap;
+}
+
+function addTyping() {
+  const c = document.getElementById('chatContainer');
+  const wrap = document.createElement('div');
+  wrap.className = 'message bach';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'msg-label';
+  lbl.textContent = 'J. S. Bach';
+
+  const bbl = document.createElement('div');
+  bbl.className = 'bubble';
+  bbl.innerHTML = '<div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+
+  wrap.appendChild(lbl);
+  wrap.appendChild(bbl);
+  c.appendChild(wrap);
+  c.scrollTop = c.scrollHeight;
+  return wrap;
+}
+</script>
+</body>
+</html>
